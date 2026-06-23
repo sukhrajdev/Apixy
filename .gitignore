@@ -1,0 +1,15 @@
+.tmp.driveupload/
+.tmp.drivedownload/
+
+node_modules/
+dist/
+generated/
+
+.env
+.env.*
+
+backend/node_modules/
+sdk/node_modules/
+
+backend/generated/
+sdk/dist/
