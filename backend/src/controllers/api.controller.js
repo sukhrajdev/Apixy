@@ -62,7 +62,7 @@ export async function getAllApi(req,res) {
     }
 }
 
-export async function LLM(req,res) {
+export async function ChatWithModel(req,res) {
     try {
         const { id } = req.apiToken;
         const { Provider, model, query } = req.body;
@@ -72,11 +72,47 @@ export async function LLM(req,res) {
         }
 
 
-        const ai = await apiService.LLM(id, Provider, model, query);
+        const ai = await apiService.ChatWithModel(id, Provider, model, query);
 
         return ApiResponse.success(res,`<<< Successfully Get Ai Response. >>>`,ai,200)
     } catch (err) {
         return ApiResponse.error(res,`<<< Error: ${err.message} >>>`,500)
+    }
+}
+
+export async function ChatWithStream(req,res) {
+    try {
+        const { id } = req.apiToken;
+        const { Provider, model, query } = req.body;
+        
+        if (!Provider || !model || !query) {
+            return ApiResponse.error(res,`<<< Missing Data >>>`,400)
+        }
+
+        res.setHeader('Content-Type', 'text/event-stream'); // Tells the client a stream is coming
+        res.setHeader('Cache-Control', 'no-cache');         // Prevents proxy caching
+        res.setHeader('Connection', 'keep-alive');          // Keeps the connection open
+        res.flushHeaders();
+
+        const stream = await apiService.ChatWithStream(id, Provider, model, query);
+        for await (const event of stream) {
+                if (event.event_type === "step.delta") {
+                    if (event.delta.type === "text") {
+                        res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
+                    }
+                }
+        }
+        res.end()
+
+        // return ApiResponse.success(res,`<<< Successfully Streaming.. . >>>`,St,200)
+    } catch (err) {
+        // Only attempt to send an error response if headers haven't already been sent
+        if (!res.headersSent) {
+            return ApiResponse.error(res, `<<< Error: ${err.message} >>>`, 500);
+        } else {
+            console.error(err)
+            res.end(); // Safely terminate the broken stream
+        }
     }
 }
 
