@@ -1,7 +1,7 @@
 import { prisma } from "../configs/prisma.config.js";
 import bcrypt from "bcrypt";
 import tokenProvider from "../providers/token/token.provider.js";
-import { googleLLM } from "../providers/llm/google/google.llm.js";
+import { GoogleLLM } from "../providers/llm/google/google.llm.js";
 import userService from "./user.service.js";
 
 
@@ -71,7 +71,7 @@ class API_SERVICE{
         }
     }
 
-    async LLM(id,provider,model,query) {
+    async ChatWithModel(id,provider,model,query) {
         try {
             
             const user = await userService.getME(id);
@@ -90,14 +90,15 @@ class API_SERVICE{
                 throw new Error(`<<< Invaild Provider Now Only Google Provider avaliable. >>>`)
             }
             
-            const apiKey = await tokenProvider.api_provider_Token(id, newProvider);
+            const Key = await tokenProvider.api_provider_Token(id, newProvider);
             
                 
-            if (!apiKey) { 
+            if (!Key) { 
                 throw new Error(`<<< Error Occured in while decrypt ApiKey. >>>`)
             }
 
-            const ai = await googleLLM(apiKey, model, query)
+            let googleLLM = new GoogleLLM(Key.apiKey)
+            const ai = await googleLLM.chatWithModel(model,query)
             
             if (!ai) {
                 throw new Error(`<<< Sorry ? Error Occured in ai Model Please check your Api Key. >>> `)
@@ -105,6 +106,38 @@ class API_SERVICE{
             return ai
         } catch (err) {
             throw new Error(`<<< Error occured in LLM: ${err.message} >>>`)
+        }
+    }
+
+    async ChatWithStream(id, provider, model, query) {
+        try {
+            const user = await userService.getME(id);
+            if (!user) {
+                throw new Error(`<<< Id is Invaild. >>>`)
+            }
+            
+            
+            if (typeof provider !== "string") {
+                throw new Error("<<< Invaild Provider type. >>>")
+            }
+            
+            const newProvider = provider.toUpperCase()
+            
+            if (newProvider !== "GOOGLE") {
+                throw new Error(`<<< Invaild Provider Now Only Google Provider avaliable. >>>`)
+            }
+            
+            const Key = await tokenProvider.api_provider_Token(id, newProvider);
+            
+                
+            if (!Key) { 
+                throw new Error(`<<< Error Occured in while decrypt ApiKey. >>>`)
+            }
+
+            let LLM = new GoogleLLM(Key.apiKey)
+            return await LLM.chatWithStream(model,query)
+        }catch(err){
+            throw new Error(err.message)
         }
     }
 
@@ -157,5 +190,14 @@ class API_SERVICE{
         }
     }
 }
+
+// async function getResponse(id, provider, mode, query) {
+//     try {
+//         const apiService = new API_SERVICE()
+//         const response = await apiService.ChatWithStream("cmqmiq0ll0002jgtwzhwgpnb8","Google","","Hello,Who are you??")
+//     } catch (err) { 
+//         console.error(err.message)
+//     }
+// }
 
 export default new API_SERVICE()

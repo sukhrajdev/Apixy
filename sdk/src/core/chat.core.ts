@@ -1,9 +1,17 @@
-import { request } from "./request.core.ts";
+import { requestToModel, requestToStream } from "./request.core.js";
 
-export async function getResponse(baseUrl: string, token: string,data:any) {
+export async function chatWithModel(baseUrl: string, token: string,data:any) {
     try {
-        const response = await request(baseUrl, token, data)
+        const response = await requestToModel(baseUrl, token, data)
         return response
+    } catch (err: any) {
+        return err.message
+    }
+}
+
+export async function chatWithStream(baseUrl:string,token:string,data:any) {
+    try {
+        return await requestToStream(baseUrl, token, data)
     } catch (err: any) {
         return err.message
     }

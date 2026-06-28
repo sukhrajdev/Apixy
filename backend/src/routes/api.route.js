@@ -5,14 +5,17 @@ import {
     createApi,
     getApi,
     getAllApi,
-    LLM,
+    ChatWithModel,
+    ChatWithStream,
     deleteApi,
     updateApi
 } from "../controllers/api.controller.js";
 
 const apiRouter = express.Router();
 
-apiRouter.post("/chat", ApiTokenVerify, LLM);
+apiRouter.post("/chat", ApiTokenVerify, ChatWithModel);
+apiRouter.post("/chat/stream", ApiTokenVerify, ChatWithStream);
+
 apiRouter.post("/providers/:provider", verifyJWT, createApi);
 apiRouter.put("/providers/:apiId", verifyJWT, updateApi);
 
