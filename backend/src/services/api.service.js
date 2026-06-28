@@ -135,7 +135,7 @@ class API_SERVICE{
             }
 
             let LLM = new GoogleLLM(Key.apiKey)
-            return LLM.chatWithStream(model,query)
+            return await LLM.chatWithStream(model,query)
         }catch(err){
             throw new Error(err.message)
         }
@@ -190,5 +190,14 @@ class API_SERVICE{
         }
     }
 }
+
+// async function getResponse(id, provider, mode, query) {
+//     try {
+//         const apiService = new API_SERVICE()
+//         const response = await apiService.ChatWithStream("cmqmiq0ll0002jgtwzhwgpnb8","Google","","Hello,Who are you??")
+//     } catch (err) { 
+//         console.error(err.message)
+//     }
+// }
 
 export default new API_SERVICE()

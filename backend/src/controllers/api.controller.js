@@ -98,20 +98,19 @@ export async function ChatWithStream(req,res) {
         for await (const event of stream) {
                 if (event.event_type === "step.delta") {
                     if (event.delta.type === "text") {
-                        res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
+                    res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
+                        
                     }
                 }
         }
         res.end()
 
-        // return ApiResponse.success(res,`<<< Successfully Streaming.. . >>>`,St,200)
     } catch (err) {
-        // Only attempt to send an error response if headers haven't already been sent
         if (!res.headersSent) {
             return ApiResponse.error(res, `<<< Error: ${err.message} >>>`, 500);
         } else {
             console.error(err)
-            res.end(); // Safely terminate the broken stream
+            res.end();
         }
     }
 }
