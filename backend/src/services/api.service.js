@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import tokenProvider from "../providers/token/token.provider.js";
 import { GoogleLLM } from "../providers/llm/google/google.llm.js";
 import userService from "./user.service.js";
+import { redis } from "../configs/redis.config.js";
 
 
 // API MAIN CLASS (ALL LOGIC)
@@ -37,6 +38,14 @@ class API_SERVICE{
                 },
             })
 
+            const key1 = `api:name:${newName}`
+            const key2 = `api:ownerId:${ownerId}`
+
+            await redis.set(`api:${api.id}`,JSON.stringify(api))
+
+            await redis.set(key1,api.id)
+            await redis.sadd(key2,api.id)
+
             return api
         } catch (err) {
             throw new Error(err.message)
@@ -45,27 +54,64 @@ class API_SERVICE{
 
     async getApi(apiName) {
         try {
+            const apiId = await redis.get(`api:name:${apiName}`);
+            const cachedApi = await redis.get(`api:${apiId}`)
+            if (cachedApi) {
+                return JSON.parse(cachedApi)
+            } else { 
+                
+                console.log(apiName);
             const api = await prisma.api.findUnique({
                 where: {
-                    name:apiName
+                    name: apiName
                 }
             })
 
+            const key1 = `api:name:${api.name}`
+            const key2 = `api:ownerId:${api.ownerId}`
+
+            await redis.set(`api:${api.id}`, JSON.stringify(api))
+
+            await redis.set(key1, api.id)
+            await redis.sadd(key2, api.id)
+
+            
+
             return api
+        }
         } catch (err) {
             throw new Error(err.message)
+            
         }
     }
 
     async getALLAPI(ownerid) {
         try {
-            const api = await prisma.api.findMany({
-                where: {
-                    ownerId:ownerid
-                }
-            })
+            const apiId = await redis.smembers(`api:ownerId:${ownerid}`);
+            const keys = apiId.map(id => `api:${apiId}`);
+            const cachedApi = await redis.mget(keys)
 
-            return api
+            if (cachedApi) {
+                return JSON.parse(cachedApi)
+                
+            } else {
+            
+                const api = await prisma.api.findMany({
+                    where: {
+                        ownerId: ownerid
+                    }
+                })
+
+                const key1 = `api:name:${api.name}`
+                const key2 = `api:ownerId:${ownerId}`
+
+                await redis.set(`api:${api.id}`, JSON.stringify(api))
+
+                await redis.set(key1, api.id)
+                await redis.sadd(key2, api.id)
+
+                return api
+            }
         } catch (err) {
             throw new Error(err.message)
         }
@@ -152,6 +198,10 @@ class API_SERVICE{
                 throw new Error(`Sorry,we couldn't delete Api Key.`)
             }
 
+            await redis.del(`api:${deleteApi.id}`)
+            await redis.del(`api:name:${deleteApi.name}`)
+            await redis.del(`api:ownerId:${deleteApi.ownerId}`)
+
             return deleteApi
 
         } catch (err) {
@@ -178,9 +228,21 @@ class API_SERVICE{
                 data: updatedData
             })
 
-            if (Object.keys(updatedApi ?? 0).length == 0) {
+            if (!updatedApi || Object.keys(updatedApi).length == 0) {
                 throw new Error("Invaild Api Id.")
             }
+
+            await redis.del(`api:${updatedApi.id}`)
+            await redis.del(`api:name:${updatedApi.name}`)
+            await redis.del(`api:ownerId:${updatedApi.ownerId}`)
+
+            const key1 = `api:name:${updatedApi.name}`
+            const key2 = `api:ownerId:${updatedApi.ownerId}`
+
+            await redis.set(`api:${updatedApi.id}`,JSON.stringify(updatedApi))
+
+            await redis.set(key1,updatedApi.id)
+            await redis.sadd(key2,updatedApi.id)
 
             return updatedApi
 
@@ -191,13 +253,5 @@ class API_SERVICE{
     }
 }
 
-// async function getResponse(id, provider, mode, query) {
-//     try {
-//         const apiService = new API_SERVICE()
-//         const response = await apiService.ChatWithStream("cmqmiq0ll0002jgtwzhwgpnb8","Google","","Hello,Who are you??")
-//     } catch (err) { 
-//         console.error(err.message)
-//     }
-// }
 
 export default new API_SERVICE()

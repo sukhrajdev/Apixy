@@ -30,11 +30,16 @@ export async function createApi(req, res) {
 
 export async function getApi(req, res) {
     try {
-        const { apiName } = req.body
+        let { apiName } = req.body
 
+        if (!apiName) {
+            return ApiResponse.error(res,`<<< Api Name is required >>>`,404)
+        }
+
+        apiName = apiName.toLowerCase()
+        
         const api = await API_SERVICE.getApi(apiName);
 
-        console.log(api);
         
         if (!api) {
             return ApiResponse.error(res,`<<< Api getting Occured Error >>>`,400)
@@ -42,7 +47,9 @@ export async function getApi(req, res) {
 
         return ApiResponse.success(res,`<<< Api is Get Successful >>>`,api,200)
     } catch (err) {
-        return ApiResponse.error(res,`<<< ${err.message} >>>`,500)
+        
+        return ApiResponse.error(res, `<<< ${err.message} >>>`, 500)
+        
     } 
 }
 
