@@ -23,14 +23,6 @@ export class Apixy {
     async chatWithStream(data: ChatOptions) {
         return chatWithStream(this.baseUrl, this.token, data);
 
-        // console.log(stream);
-        
-        // for await (const event of stream) {
-        //     if (event.text) {
-        //         // process.stdout.write(event.text);
-        //         process.stdout.write(event.text)
-        //     }
-        // }
     }
 }
 
